@@ -200,6 +200,7 @@ var scrapeMias = function(gaceta, callback) {
     var pages = pages.join(" ");
     var mias = pages.match(/[\w\d]{4}20[1,0]\d[\w\d]{5}/gi);
     if (mias) {
+      console.log('logging mias');
       async.map(mias, function(m, c) {
         Mia.findOrCreate({
           clave: m
