@@ -56,7 +56,10 @@ module.exports = {
 
   downloadGacetas: function(callback) {
     Gaceta.find({}, function(e, gacetas) {
-      if (e) throw (e);
+      if (e){
+        console.log('here the error');
+        throw (e);
+      }
       async.mapSeries(gacetas, function(g, c) {
         downloadWget(g.pdf, c)
       }, callback)
