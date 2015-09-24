@@ -192,17 +192,14 @@ var scrapeMia = function(mia, callback) {
 var scrapeMias = function(gaceta, callback) {
   var aux = gaceta.pdf.split('/');
   var filePath = dir + aux[aux.length - 1];
-  console.log('opening '+filePath);
   extract(filePath, function(err, pages) {
     if (err) {
       console.dir(err);
       return;
     }
-    console.log('opened '+filePath)
     var pages = pages.join(" ");
     var mias = pages.match(/[\w\d]{4}20[1,0]\d[\w\d]{5}/gi);
     if (mias) {
-      console.log('logging mias');
       async.map(mias, function(m, c) {
         Mia.findOrCreate({
           clave: m
