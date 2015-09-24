@@ -15,7 +15,7 @@ var counter = 1;
 var counter2 = 1;
 
 module.exports = {
-  anios: function(callback) {
+  years : function(callback) {
     request({
         //Warning este URL cambia cada año
         url: 'http://tramites.semarnat.gob.mx/index.php/component/content/article?id=284',
@@ -38,7 +38,11 @@ module.exports = {
           Year.findOrCreate(y, y, c)
         }, function(e, r) {
           if (e) throw (e);
-          callback(r);
+          console.log(r.length+'years detected');
+
+          if(callback){
+            callback(r)
+          };
         })
       });
   },
