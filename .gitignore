@@ -116,12 +116,3 @@ npm-debug.log
 nbproject
 .idea
 .node_history
-
-################################################
-# Custom
-#
-# Downloaded assets
-#
-################################################
-
-assets/gacetas/*
