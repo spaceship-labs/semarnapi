@@ -71,7 +71,7 @@ module.exports = {
     });
   },
 
-  mia: function(clave) {
+  mia: function(clave,callback) {
     counter = counter2 = 0;
     var q = clave ? {
       clave: clave
@@ -79,11 +79,7 @@ module.exports = {
     Mia.find(q, function(e, mias) {
       if (e) throw (e);
       console.log('records to process: '+mias.length);
-      async.mapLimit(mias, 1, scrapeMia, function(e, m) {
-        if (e) throw (e);
-        console.log('done');
-        res.json(m);
-      });
+      async.mapLimit(mias, 1, scrapeMia, callback);
     });
   },
 };
