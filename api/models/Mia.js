@@ -13,16 +13,20 @@ module.exports = {
 			index : true
 		},
 		file_status_set : {
-			type : 'BOOLEAN',
+			type : 'boolean',
 			defaultsTo: false
 		},
 		status : {
 			model : 'status',
 			dominant : true
 		},
-		/*fecha_de_ingreso : {
-			type: 'DATE',
-		},*/
+		entity : {
+			model : 'entidad',
+		},
+		fecha_de_ingreso : {
+			type: 'date',
+			index : true
+		},
 		poligonos: {
 			collection: 'poligono',
 			via: 'mia',
@@ -30,6 +34,5 @@ module.exports = {
 		},
 
 	},
-	migrate : 'safe',
 
 };

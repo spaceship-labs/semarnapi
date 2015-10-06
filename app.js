@@ -1,3 +1,4 @@
+var superstack = require('superstack');
 /**
  * app.js
  *

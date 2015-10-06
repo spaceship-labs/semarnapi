@@ -31,7 +31,7 @@
   "scripts": {
     "debug": "node debug app.js",
     "start": "node app.js",
-    "test" : "make test"
+    "test": "make test"
   },
   "main": "app.js",
   "repository": {
@@ -42,6 +42,8 @@
   "license": "",
   "devDependencies": {
     "sails-hook-autoreload": "^0.12.0",
-    "sails-test-helper": "^0.4.4"
+    "sails-test-helper": "^0.4.4",
+    "should": "^7.1.0",
+    "superstack": "0.0.4"
   }
 }
