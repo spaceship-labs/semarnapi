@@ -23,7 +23,7 @@
     "pdf-text-extract": "^1.2.0",
     "rc": "~0.5.0",
     "request": "^2.63.0",
-    "sails": "~0.11.0",
+    "sails": "~0.11.4",
     "sails-disk": "~0.10.0",
     "sails-mongo": "^0.11.4",
     "spooky": "^0.2.5"
@@ -41,6 +41,7 @@
   "author": "sonny",
   "license": "",
   "devDependencies": {
+    "grunt-karma": "^0.12.1",
     "sails-hook-autoreload": "^0.12.0",
     "sails-test-helper": "^0.4.4",
     "should": "^7.1.0"
