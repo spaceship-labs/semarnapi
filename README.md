@@ -1,3 +1,5 @@
 # mia-api
 
-a [Sails](http://sailsjs.org) application
+Reads "Gacetas Ecologicas" from SEMARNAT and mines the MIA information
+
+```npm test```

@@ -8,9 +8,16 @@
 module.exports = {
 
 	attributes: {
+    numero : {
+      type : 'integer',
+    },
 
+    mias: {
+      collection: 'mia',
+      via: 'gaceta',
+      dominant: true,
+    },
 
 	},
-	migrate : 'safe',
 
 };
