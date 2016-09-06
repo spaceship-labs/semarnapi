@@ -1,18 +1,18 @@
-/**
- * ScraperService.js
- *
- * @description ::
- * @docs        :: http://sailsjs.org/#!documentation/controllers
+/* ScraperService.js *
+ * @description::
+ * @docs::http: //sailsjs.org/#!documentation/controllers
  */
 
-var extract = require('pdf-text-extract');
-var request = require('request');
-var cheerio = require('cheerio');
-var fs = require('fs');
-var Spooky = require('spooky');
-var dir = 'assets/gacetas/';
-var counter = 1;
-var counter2 = 1;
+var extract = require('pdf-text-extract'),
+  request = require('request'),
+  cheerio = require('cheerio'),
+  fs = require('fs'),
+  Spooky = require('spooky'),
+  q = require('q'),
+  mapSeries = require('promise-map-series'),
+  dir = 'assets/gacetas/',
+  counter = 1,
+  counter2 = 1;
 
 module.exports = {
   years: function(callback) {
@@ -47,10 +47,14 @@ module.exports = {
       });
   },
 
+  //Go through all the years and collect gaceta metadata (step1)
   gacetas: function(callback) {
-    Year.find({}, function(e, years) {
-      if (e) throw (e);
-      async.mapSeries(years, scrapeGacetas, callback);
+    var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016];
+    var years = [2015, 2016];
+    counter = 0;
+    async.mapSeries(years, scrapeGacetas, function(e, res) {
+      console.log('total' + counter);
+      //callback(e,res);
     });
   },
 
@@ -63,6 +67,8 @@ module.exports = {
           return CloudFilesService.save(gaceta.pdf);
         });
       }, q());
+
+
       /*
       return q.all(gacetas.map(function(gaceta) {
         return CloudFilesService.save(gaceta.pdf);
@@ -71,13 +77,19 @@ module.exports = {
         downloadWget(g.pdf, c)
       }, callback)*/
     })
+
   },
 
-  mias: function(callback) {
+  //Extract the mia codes from the gaceta pdfs with a regex and save them (step3)
+  mineGacetas: function(callback) {
     counter = 0;
-    Gaceta.find({}).exec(function(e, gacetas) {
+    Gaceta.find({
+      status: {
+        '!': 'mined'
+      }
+    }).exec(function(e, gacetas) {
       console.log(gacetas.length);
-      async.mapSeries(gacetas, scrapeMias, callback);
+      async.mapSeries(gacetas, mineGaceta, callback);
     });
   },
 
@@ -96,10 +108,70 @@ module.exports = {
 
 
 
-var timestamp = function() {
-  var newDate = new Date();
-  newDate.setTime(Date.now() * 1000);
-  return '[' + newDate.toUTCString() + '] ';
+
+//Reads Gaceta metadata from sinat
+var scrapeGacetas = function(year, callback) {
+    request({
+        url: 'http://sinat.semarnat.gob.mx/Gaceta/gacetapublicacion/?ai=' + year,
+        headers: {
+          'user-agent': 'Mozilla/5.0'
+        },
+      },
+      function(err, resp, body) {
+        if (err) throw (err);
+        $ = cheerio.load(body);
+        var gacetas = [];
+        $('a[href*="archivos' + year + '/gaceta_"]').each(function() {
+          var file = $(this).attr('href').split('/');
+          gacetas.push({
+            pdf: $(this).attr('href'),
+            periodo: $(this).parent().parent().next().text().trim(),
+            publicacion: $(this).parent().parent().next().next().text().trim(),
+            numero: $(this).text().trim(),
+          });
+        })
+        console.log(year + ': ' + gacetas.length + ' documents');
+        counter += gacetas.length;
+        async.map(gacetas, function(g, c) {
+          Gaceta.findOrCreate(g, g, c)
+        }, callback);
+      });
+  }
+  //Reads the gaceta pdf and matches the id to a code
+var mineGaceta = function(gaceta, callback) {
+  var aux = gaceta.pdf.split('/');
+  var filePath = dir + aux[aux.length - 1];
+  extract(filePath, function(err, pages) {
+    if (err) {
+      console.log('error reading file: ' + filePath);
+      return Gaceta.update(gaceta.id, {
+        status: 'file error'
+      }, callback);
+    }
+    var pages = pages.join(" ");
+    var mias = pages.match(/[\w\d]{4}20[1,0]\d[\w\d]{5}/gi);
+    if (mias) {
+      async.map(mias, function(m, c) {
+        Mia.findOrCreate({
+          clave: m
+        }, {
+          clave: m,
+          gaceta: gaceta.id,
+        }, c)
+      }, function(e, res) {
+        Gaceta.update(gaceta.id, {
+          status: 'mined'
+        }, callback);
+      });
+      console.log('gacetas procesadas: ' + counter++);
+    } else {
+      console.log('no mias: ', gaceta.pdf);
+      Gaceta.update(gaceta.id, {
+        status: 'no mias'
+      }, callback);
+    }
+
+  });
 }
 
 var scrapeMia = function(mia, callback) {
@@ -120,7 +192,7 @@ var scrapeMia = function(mia, callback) {
         throw e;
       }
       console.log(timestamp() + " downloading " + mia.clave);
-      spooky.start('http://app1.semarnat.gob.mx/consultatramite/inicio.php');
+      spooky.start('http://apps1.semarnat.gob.mx/consultatramite/inicio.php');
       spooky.then([{
         mia: mia.clave
       }, function() {
@@ -159,23 +231,29 @@ var scrapeMia = function(mia, callback) {
         var resumen = $('a[href*="wResumenes"]');
         var estudio = $('a[href*="wEstudios"]');
         var resolutivo = $('a[href*="wResolutivos"]');
+        var date = $('.texto_espacio').eq(3).text().trim().split('/');
+        date = new Date(date[2], date[1] - 1, date[0]);
         var mia = {
-            estado: $(".tit_menu").text().replace('Num. ', '').trim(),
-            tramite: general[1].trim(),
-            proyecto: general[3].replace('Proyecto: ', ''),
-            clave: general[5].replace('Num. Proyecto: ', '').trim(),
-            entidad: $('.texto_espacio').eq(2).text().trim(),
-            fecha_de_ingreso: $('.texto_espacio').eq(3).text().trim(),
-            situacion_actual: $('textarea.texto_espacio').val().trim(),
-            resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
-            estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
-            resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
-          }
-          //console.dir(mia);
+          estado: $(".tit_menu").text().replace('Num. ', '').trim(),
+          tramite: general[1].trim(),
+          proyecto: general[3].replace('Proyecto: ', ''),
+          clave: general[5].replace('Num. Proyecto: ', '').trim(),
+          entidad: $('.texto_espacio').eq(2).text().trim(),
+          fechaIngreso: date,
+          situacionActual: $('textarea.texto_espacio').val().trim(),
+          resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
+          estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
+          resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
+        }
+        //console.dir(mia);
         console.log(timestamp() + ' proccesed ' + counter++);
         Mia.update({
           clave: mia.clave
-        }, mia, callback);
+        }, mia, function(e, res) {
+          if (e) throw e;
+          console.log('saved this');
+          callback(e, res);
+        });
       } else {
         console.log(timestamp() + ' orphaned  ' + counter2++);
         Mia.update({
@@ -293,4 +371,8 @@ var downloadWget = function(url, cb) {
     console.log('downloaded: ' + fname);
     cb(null, dir + fname);
   });
+var timestamp = function() {
+  var newDate = new Date();
+  newDate.setTime(Date.now() * 1000);
+  return '[' + newDate.toUTCString() + '] ';
 }
