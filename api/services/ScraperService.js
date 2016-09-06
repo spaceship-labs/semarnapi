@@ -15,7 +15,7 @@ var counter = 1;
 var counter2 = 1;
 
 module.exports = {
-  years : function(callback) {
+  years: function(callback) {
     request({
         //Warning este URL cambia cada año
         url: 'http://tramites.semarnat.gob.mx/index.php/component/content/article?id=284',
@@ -38,9 +38,9 @@ module.exports = {
           Year.findOrCreate(y, y, c)
         }, function(e, r) {
           if (e) throw (e);
-          console.log(r.length+'years detected');
+          console.log(r.length + 'years detected');
 
-          if(callback){
+          if (callback) {
             callback(r)
           };
         })
@@ -55,11 +55,21 @@ module.exports = {
   },
 
   downloadGacetas: function(callback) {
+    var q = require('q');
     Gaceta.find({}, function(e, gacetas) {
       if (e) throw (e);
-      async.mapSeries(gacetas, function(g, c) {
+      return gacetas.reduce(function(promise, gaceta) {
+        return promise.then(function() {
+          return CloudFilesService.save(gaceta.pdf);
+        });
+      }, q());
+      /*
+      return q.all(gacetas.map(function(gaceta) {
+        return CloudFilesService.save(gaceta.pdf);
+      }));*/
+      /*async.mapSeries(gacetas, function(g, c) {
         downloadWget(g.pdf, c)
-      }, callback)
+      }, callback)*/
     })
   },
 
@@ -71,14 +81,14 @@ module.exports = {
     });
   },
 
-  mia: function(clave,callback) {
+  mia: function(clave, callback) {
     counter = counter2 = 0;
     var q = clave ? {
       clave: clave
     } : {};
     Mia.find(q, function(e, mias) {
       if (e) throw (e);
-      console.log('records to process: '+mias.length);
+      console.log('records to process: ' + mias.length);
       async.mapLimit(mias, 1, scrapeMia, callback);
     });
   },
@@ -161,7 +171,7 @@ var scrapeMia = function(mia, callback) {
             estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
             resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
           }
-        //console.dir(mia);
+          //console.dir(mia);
         console.log(timestamp() + ' proccesed ' + counter++);
         Mia.update({
           clave: mia.clave
@@ -213,7 +223,7 @@ var scrapeMias = function(gaceta, callback) {
 
 var scrapeGacetas = function(year, callback) {
   request({
-      url: 'http://dsiapps.semarnat.gob.mx/gaceta/Gacetas/gaceta' + year.year + '.php',
+      url: 'http://sinat.semarnat.gob.mx/Gaceta/gacetapublicacion/?ai=' + year.year,
       headers: {
         'user-agent': 'Mozilla/5.0'
       },
@@ -225,12 +235,13 @@ var scrapeGacetas = function(year, callback) {
       $('a[href*="archivos' + year.year + '/gaceta_"]').each(function() {
         var file = $(this).attr('href').split('/')
         gacetas.push({
-          pdf: 'http://dsiapps.semarnat.gob.mx/gaceta/archivos' + year.year + '/' + file[file.length - 1],
+          pdf: 'http://sinat.semarnat.gob.mx/Gacetas/archivos' + year.year + '/' + file[file.length - 1],
           periodo: $(this).parent().parent().next().text().trim(),
           publicacion: $(this).parent().parent().next().next().text().trim(),
           numero: $(this).text().trim(),
         });
       })
+      console.log(year.year, gacetas.length);
       dir = 'assets/gacetas/';
       async.map(gacetas, function(g, c) {
         Gaceta.findOrCreate(g, g, c)
