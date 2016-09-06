@@ -12,10 +12,6 @@ module.exports = {
       unique : true,
       index : true
     },
-    file_status_set : {
-      type : 'boolean',
-      defaultsTo: false
-    },
     status : {
       model : 'status',
       dominant : true
@@ -23,7 +19,7 @@ module.exports = {
     entity : {
       model : 'entidad',
     },
-    fecha_de_ingreso : {
+    fechaIngreso : {
       type: 'date',
       index : true
     },

@@ -101,7 +101,7 @@ var mineGaceta = function(gaceta, callback) {
       console.log('error reading file: ' + filePath);
       return Gaceta.update(gaceta.id, {
         status: 'file error'
-      },callback);
+      }, callback);
     }
     var pages = pages.join(" ");
     var mias = pages.match(/[\w\d]{4}20[1,0]\d[\w\d]{5}/gi);
@@ -186,26 +186,28 @@ var scrapeMia = function(mia, callback) {
         var resumen = $('a[href*="wResumenes"]');
         var estudio = $('a[href*="wEstudios"]');
         var resolutivo = $('a[href*="wResolutivos"]');
+        var date = $('.texto_espacio').eq(3).text().trim().split('/');
+        date = new Date(date[2], date[1] - 1, date[0]);
         var mia = {
-            estado: $(".tit_menu").text().replace('Num. ', '').trim(),
-            tramite: general[1].trim(),
-            proyecto: general[3].replace('Proyecto: ', ''),
-            clave: general[5].replace('Num. Proyecto: ', '').trim(),
-            entidad: $('.texto_espacio').eq(2).text().trim(),
-            fecha_de_ingreso: $('.texto_espacio').eq(3).text().trim(),
-            situacion_actual: $('textarea.texto_espacio').val().trim(),
-            resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
-            estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
-            resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
-          }
-          console.dir(mia);
+          estado: $(".tit_menu").text().replace('Num. ', '').trim(),
+          tramite: general[1].trim(),
+          proyecto: general[3].replace('Proyecto: ', ''),
+          clave: general[5].replace('Num. Proyecto: ', '').trim(),
+          entidad: $('.texto_espacio').eq(2).text().trim(),
+          fechaIngreso: date,
+          situacionActual: $('textarea.texto_espacio').val().trim(),
+          resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
+          estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
+          resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
+        }
+        //console.dir(mia);
         console.log(timestamp() + ' proccesed ' + counter++);
         Mia.update({
           clave: mia.clave
-        }, mia, function(e,res){
-          if(e) throw e;
+        }, mia, function(e, res) {
+          if (e) throw e;
           console.log('saved this');
-          callback(e,res);
+          callback(e, res);
         });
       } else {
         console.log(timestamp() + ' orphaned  ' + counter2++);
