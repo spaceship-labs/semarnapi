@@ -50,36 +50,26 @@ module.exports = {
   //Go through all the years and collect gaceta metadata (step1)
   gacetas: function(callback) {
     var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016];
-    var years = [2015, 2016];
+    var years = [2016];
     counter = 0;
     async.mapSeries(years, scrapeGacetas, function(e, res) {
       console.log('total' + counter);
-      //callback(e,res);
+  //    callback(e, res);
     });
   },
-
+  //Download the actual gaceta pdfs (step2)
   downloadGacetas: function(callback) {
     var q = require('q');
     Gaceta.find({}, function(e, gacetas) {
       if (e) throw (e);
-      return gacetas.reduce(function(promise, gaceta) {
-        return promise.then(function() {
+      return Gaceta.find().then(function(gacetas) {
+        return mapSeries(gacetas, function(g) {
           return CloudFilesService.save(gaceta.pdf);
         });
-      }, q());
-
-
-      /*
-      return q.all(gacetas.map(function(gaceta) {
-        return CloudFilesService.save(gaceta.pdf);
-      }));*/
-      /*async.mapSeries(gacetas, function(g, c) {
-        downloadWget(g.pdf, c)
-      }, callback)*/
+      });
     })
 
   },
-
   //Extract the mia codes from the gaceta pdfs with a regex and save them (step3)
   mineGacetas: function(callback) {
     counter = 0;
@@ -121,6 +111,7 @@ var scrapeGacetas = function(year, callback) {
         if (err) throw (err);
         $ = cheerio.load(body);
         var gacetas = [];
+        console.log('loaded website');
         $('a[href*="archivos' + year + '/gaceta_"]').each(function() {
           var file = $(this).attr('href').split('/');
           gacetas.push({
@@ -234,18 +225,18 @@ var scrapeMia = function(mia, callback) {
         var date = $('.texto_espacio').eq(3).text().trim().split('/');
         date = new Date(date[2], date[1] - 1, date[0]);
         var mia = {
-          estado: $(".tit_menu").text().replace('Num. ', '').trim(),
-          tramite: general[1].trim(),
-          proyecto: general[3].replace('Proyecto: ', ''),
-          clave: general[5].replace('Num. Proyecto: ', '').trim(),
-          entidad: $('.texto_espacio').eq(2).text().trim(),
-          fechaIngreso: date,
-          situacionActual: $('textarea.texto_espacio').val().trim(),
-          resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
-          estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
-          resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
-        }
-        //console.dir(mia);
+            estado: $(".tit_menu").text().replace('Num. ', '').trim(),
+            tramite: general[1].trim(),
+            proyecto: general[3].replace('Proyecto: ', ''),
+            clave: general[5].replace('Num. Proyecto: ', '').trim(),
+            entidad: $('.texto_espacio').eq(2).text().trim(),
+            fechaIngreso: date,
+            situacionActual: $('textarea.texto_espacio').val().trim(),
+            resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
+            estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
+            resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
+          }
+          //console.dir(mia);
         console.log(timestamp() + ' proccesed ' + counter++);
         Mia.update({
           clave: mia.clave
@@ -299,78 +290,6 @@ var scrapeMias = function(gaceta, callback) {
   });
 }
 
-var scrapeGacetas = function(year, callback) {
-  request({
-      url: 'http://sinat.semarnat.gob.mx/Gaceta/gacetapublicacion/?ai=' + year.year,
-      headers: {
-        'user-agent': 'Mozilla/5.0'
-      },
-    },
-    function(err, resp, body) {
-      if (err) throw (err);
-      $ = cheerio.load(body);
-      var gacetas = [];
-      $('a[href*="archivos' + year.year + '/gaceta_"]').each(function() {
-        var file = $(this).attr('href').split('/')
-        gacetas.push({
-          pdf: 'http://sinat.semarnat.gob.mx/Gacetas/archivos' + year.year + '/' + file[file.length - 1],
-          periodo: $(this).parent().parent().next().text().trim(),
-          publicacion: $(this).parent().parent().next().next().text().trim(),
-          numero: $(this).text().trim(),
-        });
-      })
-      console.log(year.year, gacetas.length);
-      dir = 'assets/gacetas/';
-      async.map(gacetas, function(g, c) {
-        Gaceta.findOrCreate(g, g, c)
-      }, callback);
-    });
-}
-
-var download = function(url, cb) {
-  var fname = url.split('/');
-  fname = fname[fname.length - 1];
-  if (fs.existsSync(dir + fname)) {
-    console.log('exists: ' + counter++);
-    cb(null, fname);
-  } else {
-    var options = {
-      uri: url,
-      headers: {
-        'user-agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:15.0) Gecko/20120427 Firefox/15.0a1'
-      },
-      method: "HTTP",
-    }
-    console.log('downloading: ' + url);
-    var req = request(options).pipe(fs.createWriteStream(dir + fname)).on('finish', function(e, res, body) {
-      if (e) cb(e, fname);
-      console.log('downloaded :' + counter++);
-      cb(null, fname);
-    });
-  }
-}
-
-var downloadWget = function(url, cb) {
-  var fname = url.split('/');
-  fname = fname[fname.length - 1];
-  console.log('downloading ' + fname);
-  var util = require('util'),
-    exec = require('child_process').exec,
-    child,
-
-    child = exec('wget -O ' + dir + fname + ' ' + url,
-      function(error, stdout, stderr) {
-        // console.log('stdout: ' + stdout);
-        // console.log('stderr: ' + stderr);
-        if (error !== null) {
-          console.log('exec error: ' + error);
-          cb(error, url);
-        }
-      });
-  child.on('exit', function() {
-    console.log('downloaded: ' + fname);
-    cb(null, dir + fname);
-  });
 var timestamp = function() {
   var newDate = new Date();
   newDate.setTime(Date.now() * 1000);
