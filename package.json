@@ -30,7 +30,8 @@
     "sails-disk": "~0.10.0",
     "sails-mongo": "^0.11.4",
     "spooky": "^0.2.5",
-    "textract": "^2.0.0"
+    "textract": "^2.0.0",
+    "tiny-jsonrpc": "^2.0.1"
   },
   "scripts": {
     "debug": "node debug app.js",
