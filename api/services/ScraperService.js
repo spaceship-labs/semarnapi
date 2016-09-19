@@ -49,6 +49,7 @@ module.exports = {
   },
   //Get metadata for each proyect (iterates using robot needs to be  refactored into RobotService)
   mia: function(clave) {
+    var q = require('q');
     var deferred = q.defer();
     counter = counter2 = 0;
     var q = clave ? {
