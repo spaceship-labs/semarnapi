@@ -16,9 +16,11 @@ var extract = require('pdf-text-extract'),
 
 module.exports = {
   //Go through all the years and collect and save gaceta ecológica metadata (step1)
-  gacetas: function() {
+  gacetas: function(years) {
     var deferred = q.defer();
-    var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016];
+    if (!years) {
+      var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017];
+    }
     //var years = [2016];
     counter = 0;
     async.mapSeries(years, scrapeGacetas, function(e, res) {
@@ -40,33 +42,28 @@ module.exports = {
   },
   //Extract and save mias that have not been saved (step3)
   mineGacetas: function() {
-    var criteria = { status: { '!': 'mined' } };
-    //var criteria = {status: 'mined'};
+    var criteria = { status: { '!': ['mined', 'error'] } };
     return Gaceta.find(criteria).then(function(gacetas) {
       console.log('mining ' + gacetas.length + ' gacetas for MIAs');
       return mapSeries(gacetas, Gaceta.extractAndSaveMias);
     });
   },
   //Get metadata for each proyect (iterates using robot needs to be  refactored into RobotService)
-  mia: function(clave) {
+  mia: function() {
     var q = require('q');
     var deferred = q.defer();
     counter = counter2 = 0;
-    var q = clave ? {
-      clave: clave
-    } : {
-      "proyecto": null,
-      'orphaned': {
-        '!': true
-      }
+    var query = {
+      "proyecto": null
     };
-    Mia.find(q, function(e, mias) {
+    console.log(query);
+    Mia.find(query, function(e, mias) {
       if (e) throw (e);
       console.log('records to process: ' + mias.length);
-      async.mapLimit(mias, 1, scrapeMia, function(e,res){
-        if(e){
+      async.mapLimit(mias, 1, scrapeMia, function(e, res) {
+        if (e) {
           deferred.reject(e);
-        }else{
+        } else {
           deferred.resolve(res);
         }
       });

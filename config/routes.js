@@ -35,7 +35,12 @@ module.exports.routes = {
   '/': {
     controller : 'mia',
     action : 'find'
-  }
+  },
+
+  'get /mia/count' : {
+    blueprint: 'count',
+    model : 'mia'
+  },
 
   /***************************************************************************
   *                                                                          *

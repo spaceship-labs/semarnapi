@@ -39,11 +39,9 @@ module.exports = {
       .then(function(mias) {
         console.log('saved ' + mias.length);
         return Gaceta.update(gaceta.id, { status: 'mined' });
-      })
-      .catch(function(error) {
+      }, function() {
         console.log('could not save anything on gaceta ' + gaceta.periodo);
-        console.log(error.message);
-        return Gaceta.update(gaceta.id, { error: error.message });
+        return Gaceta.update(gaceta.id, {status: 'error' });
       });
     //return gaceta.extractAndSaveMias();
   },
@@ -51,7 +49,7 @@ module.exports = {
     var q = require('q');
     var mapSeries = require('promise-map-series');
     //console.log(gaceta.id);
-    if (claves.length) {
+    if (claves) {
       console.log('saving ' + claves.length + ' MIAs');
 
       function task(clave) {
@@ -62,8 +60,8 @@ module.exports = {
           gaceta: gaceta.id,
         });
       };
-      
-      return mapSeries(claves,task);
+
+      return mapSeries(claves, task);
     } else {
       return q.reject(claves);
     }
