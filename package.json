@@ -36,7 +36,8 @@
   "scripts": {
     "debug": "node debug app.js",
     "start": "node app.js",
-    "test": "make test"
+    "test": "make test",
+    "console": "sails console"
   },
   "main": "app.js",
   "repository": {

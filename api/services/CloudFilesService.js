@@ -15,7 +15,7 @@ module.exports = {
 function connect() {
   var pkgcloud = require('pkgcloud');
   console.log('Creating Cloud Files Client');
-  var client = pkgcloud.storage.createClient(sails.config.rackspace);
+  var client = pkgcloud.storage.createClient(sails.config.aws);
   console.log('Cloud Files Client Created');
   CloudFilesService.client = client;
 }
@@ -58,7 +58,7 @@ function findOrCreate(url) {
   },CloudFilesService.save);
 }
 
-function fileExists(url) {  
+function fileExists(url) {
   var filename = getFilenameFromUrl(url);
   var q = require('q');
   if (!CloudFilesService.client) {
@@ -77,7 +77,7 @@ function fileExists(url) {
 
 function getCloudUrl(url){
   filename = getFilenameFromUrl(url);
-  return sails.config.rackspace.containerUrl + '/' + filename;
+  return sails.config.aws.containerUrl + '/' + filename;
 }
 
 function getFilenameFromUrl(url) {
