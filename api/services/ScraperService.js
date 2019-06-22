@@ -19,7 +19,7 @@ module.exports = {
   gacetas: function(years) {
     var deferred = q.defer();
     if (!years) {
-      var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017];
+      var years = [2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018];
     }
     //var years = [2016];
     counter = 0;
@@ -69,6 +69,31 @@ module.exports = {
       });
     });
   },
+
+  test: function() {
+    Mia.findOne({ clave: '23QR2016TD052' }).then(function(mia) {
+      //console.log(mia);
+      mia.proyecto = false;
+      scrapeMia(mia, function(e, mia) {
+        console.log(mia);
+      });
+    });
+  },
+  readStates: function() {
+    Entidad.find().then(function(entidades){
+      var id = entidades[0].name;
+      console.log(id);
+      Mia.findOne({entidad:id}).then(function(mia){
+        console.log(mia);
+      });
+    })
+    .catch(function(err){
+      console.log(err);
+    })
+  },
+  updateDF : function(){
+    Entidad.update({name:'Distrito Federal'},{name:'Ciudad de México'}).exec(console.logLevel);
+  }
 };
 
 //Reads Gaceta metadata from sinat
@@ -162,18 +187,18 @@ var scrapeMia = function(mia, callback) {
         var date = $('.texto_espacio').eq(3).text().trim().split('/');
         date = new Date(date[2], date[1] - 1, date[0]);
         var mia = {
-            estado: $(".tit_menu").text().replace('Num. ', '').trim(),
-            tramite: general[1].trim(),
-            proyecto: general[3].replace('Proyecto: ', ''),
-            clave: general[5].replace('Num. Proyecto: ', '').trim(),
-            entidad: $('.texto_espacio').eq(2).text().trim(),
-            fechaIngreso: date,
-            situacionActual: $('textarea.texto_espacio').val().trim(),
-            resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
-            estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
-            resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
-          }
-          //console.dir(mia);
+          estado: $(".tit_menu").text().replace('Num. ', '').trim(),
+          tramite: general[1].trim(),
+          proyecto: general[3].replace('Proyecto: ', ''),
+          clave: general[5].replace('Num. Proyecto: ', '').trim(),
+          entidad: $('.texto_espacio').eq(2).text().trim(),
+          fechaIngreso: date,
+          situacionActual: $('textarea.texto_espacio').val().trim(),
+          resumen: resumen.length ? resumen.attr('href').replace("javascript:abrirPDF('", '').replace("','wResumenes')", '') : false,
+          estudio: estudio.length ? estudio.attr('href').replace("javascript:abrirPDF('", '').replace("','wEstudios')", '') : false,
+          resolutivo: resolutivo.length ? resolutivo.attr('href').replace("javascript:abrirPDF('", '').replace("','wResolutivos')", '') : false,
+        }
+        //console.dir(mia);
         console.log(timestamp() + ' proccesed ' + counter++);
         Mia.update({
           clave: mia.clave

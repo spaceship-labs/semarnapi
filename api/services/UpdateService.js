@@ -17,7 +17,7 @@ function install() {
 }
 
 function update() {
-  ScraperService.gacetas([2017])
+  ScraperService.gacetas([2018])
     .then(ScraperService.downloadGacetas)
     .then(ScraperService.mineGacetas)
     .then(ScraperService.mia)
