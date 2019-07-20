@@ -8,7 +8,7 @@ module.exports = {
     install: install,
     update: update,
   }
-  //Runs Scraper functions
+  
 function install() {
   ScraperService.gacetas()
     .then(ScraperService.downloadGacetas)
@@ -17,8 +17,9 @@ function install() {
 }
 
 function update() {
-  ScraperService.gacetas([2018])
+  ScraperService.gacetas([2019])
     .then(ScraperService.downloadGacetas)
     .then(ScraperService.mineGacetas)
     .then(ScraperService.mia)
 }
+
